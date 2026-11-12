@@ -4,3 +4,8 @@ node_modules
 dist
 .neon
 admin-password.txt
+.vercel
+
+
+.vercel
+.env*

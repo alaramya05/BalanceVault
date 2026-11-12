@@ -12,7 +12,44 @@ import { apiLimiter, authLimiter, redis } from "./rateLimit.js";
 const app = express();
 app.set("trust proxy", 1);
 app.use(helmet());
-app.use(cors({ origin: (process.env.CORS_ORIGIN || "http://localhost:5173").split(",") }));
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean)
+  : [];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // 1. Requests with no origin header (e.g. same-origin GET/navigation, server-to-server, curl)
+      if (!origin) return callback(null, true);
+
+      // 2. If explicit CORS_ORIGIN is provided, validate strictly against it
+      if (allowedOrigins.length > 0) {
+        const clean = origin.replace(/\/+$/, "");
+        if (allowedOrigins.includes(clean)) return callback(null, true);
+        return callback(null, false);
+      }
+
+      // 3. When CORS_ORIGIN is unset: Same-origin ONLY (no '*' wildcard)
+      if (!process.env.VERCEL) {
+        if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
+          return callback(null, true);
+        }
+      }
+
+      if (process.env.VERCEL_URL) {
+        try {
+          const originHost = new URL(origin).host.toLowerCase();
+          const expectedHost = process.env.VERCEL_URL.toLowerCase();
+          if (originHost === expectedHost) return callback(null, true);
+        } catch {}
+      }
+
+      // Reject all cross-origin requests
+      callback(null, false);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "100kb" }));
 
 // ---- Health / readiness (no rate limit) ----
@@ -124,5 +161,10 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: "Internal error" });
 });
 
-const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`BalanceVault API on :${port}`));
+if (!process.env.VERCEL) {
+  const port = process.env.PORT || 4000;
+  app.listen(port, () => console.log(`BalanceVault API on :${port}`));
+}
+
+export default app;
+export { app };

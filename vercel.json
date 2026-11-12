@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "installCommand": "npm install --include=optional",
+  "buildCommand": "npm run db:generate && npm run build",
+  "outputDirectory": "apps/frontend/dist",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "{apps/backend/prisma/**,node_modules/.prisma/**,node_modules/@prisma/client/**}"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/health", "destination": "/api" },
+    { "source": "/ready", "destination": "/api" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+

@@ -2,8 +2,11 @@ import rateLimit from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
 import Redis from "ioredis";
 
-export const redis = process.env.REDIS_URL
-  ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 2, lazyConnect: false })
+const redisUrl = process.env.REDIS_URL ? process.env.REDIS_URL.trim() : "";
+const hasRedis = Boolean(redisUrl && redisUrl !== "" && redisUrl !== "undefined" && redisUrl !== "null");
+
+export const redis = hasRedis
+  ? new Redis(redisUrl, { maxRetriesPerRequest: 2, lazyConnect: false })
   : null;
 if (redis) redis.on("error", (e) => console.error("redis:", e.message));
 

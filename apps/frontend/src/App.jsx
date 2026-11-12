@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const rawApi = import.meta.env.VITE_API_URL;
+const API = (rawApi !== undefined && rawApi !== null)
+  ? rawApi.replace(/\/+$/, "")
+  : (import.meta.env.DEV ? "http://localhost:4000" : "");
 
 async function api(path, { method = "GET", body, token } = {}) {
   const res = await fetch(API + path, {
